@@ -14,9 +14,9 @@ abstract class MySet[A] extends (A=>Boolean){
     def filter[B](p:A=>Boolean):MySet[A]
     def foreach(f: A=>Unit):Unit
     def -(elem:A):MySet[A] = filter(_!=elem)
-    def &(anotherSet:MySet[A]) = filter(anotherSet)
-    def --(anotherSet:MySet[A]) = filter(x=> ! anotherSet(x))
-    def unary_! : MySet[A] =
+    def &(anotherSet:MySet[A]): MySet[A] = filter(anotherSet)
+    def --(anotherSet:MySet[A]): MySet[A] = filter(x=> ! anotherSet(x))
+    def unary_! : MySet[A] = ???
 }
 class EmptySet[A] extends MySet[A]{
     def contains(elem: A): Boolean = false
@@ -54,6 +54,25 @@ class NonEmptySet[A](head:A, tail:MySet[A]) extends MySet[A] {
         f(head)
         tail.foreach(f)
     }
+}
+class PropertyBasedSet[A](property: A => Boolean) extends MySet[A] {
+    override def contains(elem: A): Boolean = property(elem)
+
+    override def +(elem: A): MySet[A] = new PropertyBasedSet((e:A) => property(e)||e==elem)
+
+    override def ++(anotherSet: MySet[A]): MySet[A] = new PropertyBasedSet((e:A) => property(e)||anotherSet(e))
+
+    override def map[B](f: A => B): MySet[B] = politelyFail
+
+    override def flatMap[B](f: A => MySet[B]): MySet[B] = politelyFail
+
+    override def filter[B](p: A => Boolean): MySet[A] = new PropertyBasedSet[A](x => property(x) && p(x))
+
+    override def unary_! : MySet[A] = new PropertyBasedSet[A](x=> !property(x))
+
+    override def foreach(f: A => Unit): Unit = politelyFail
+
+    def politelyFail = throw new IllegalArgumentException("Really deep rabbit hole")
 }
 
 
