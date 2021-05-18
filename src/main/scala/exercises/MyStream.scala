@@ -83,4 +83,12 @@ class NonEmptyStream[+A](start:A, rest: => MyStream[A]) extends MyStream[A] {
 
 object test extends App {
   println(MyStream.from( 1)(_+2).flatMap(x=> new NonEmptyStream(x,new NonEmptyStream(x, EmptyStream))).take(2).foreach(println))
+  val starts2 = MyStream.from(2)(_+1)
+  val filterSet = new EmptySet[Int]()
+  def primes(numbers:MyStream[Int]):MyStream[Int]={
+    new NonEmptyStream(numbers.head, primes(numbers.tail.filter(_%numbers.head!=0)))
+  }
+  def fib(a1:Int,a2:Int):MyStream[Int]=new NonEmptyStream(a1, fib(a2, a1+a2))
+  primes(starts2).take(100).foreach(println)
+//  fib(1,1).take(100).foreach(println)
 }
