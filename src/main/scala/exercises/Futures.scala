@@ -68,14 +68,27 @@ object Futures extends App{
     }
     def retryUntil[T](action:()=>Future[T], condition:T=>Boolean):Future[T]={
         val result = Promise[T]()
-        while(result.future.value.isEmpty){
-            val testFuture = action
-        }
+        val testFuture = action()
+        testFuture.onComplete({
+            case Success(r) if condition(r) => result.success(r)
+            case _ => {
+                retryUntil(action, condition).onComplete(result.complete)
+            }
+        })
         result.future
     }
-
-    val r1 = second(f1,f2)
-    Await.result(r1, 5.seconds)
+    var state:Int = 1
+    val act = ()=>{
+        state+=1
+        Future{
+            println(s"action $state start")
+            Thread.sleep(100)
+            println(s"action $state end")
+            state
+        }
+    }
+    val r1 = retryUntil(act, {x:Int=> x > 10})
+    Await.result(r1, 10.seconds)
 
     println(r1.value)
     Thread.sleep(5000)
